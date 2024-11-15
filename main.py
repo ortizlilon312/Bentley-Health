@@ -1,14 +1,28 @@
 import streamlit as st
 import pandas as pd
+import datetime
+import matplotlib.pyplot as plt
 
 # Set up Streamlit app
 st.title("Bentley University Healthy Lifestyle Recommendations")
 st.write("Provide your health and fitness data to receive personalized recommendations for healthy campus activities.")
 
+# Load or initialize data
+if 'health_data' not in st.session_state:
+    st.session_state['health_data'] = pd.DataFrame(columns=['date', 'steps', 'active_minutes', 'time_in_bed', 'screen_time', 'most_used_app', 'most_used_app_time', 'other_apps', 'walk_days', 'walk_hours', 'run_days', 'run_hours', 'gym_days', 'gym_hours', 'age', 'height', 'weight', 'affiliation'])
+
+# User Input: Personal Information
+st.write("### Please provide your personal information:")
+age = st.number_input("Enter your age:", min_value=0, step=1)
+height = st.number_input("Enter your height (in cm):", min_value=0.0, step=0.1)
+weight = st.number_input("Enter your weight (in kg):", min_value=0.0, step=0.1)
+affiliation = st.selectbox("Select your affiliation to Bentley University:", ["Undergraduate Student", "Graduate Student", "Faculty", "Staff", "Other"])
+
 # User Input: Manual Entry of Health and Activity Information
-st.write("### Please fill out the following information:")
+st.write("### Please fill out the following health and activity information:")
 
 # Get user inputs
+date = st.date_input("Select the date:", min_value=datetime.date(2023, 1, 1), max_value=datetime.date.today())
 steps = st.number_input("Enter your average daily steps:", min_value=0, step=100)
 active_minutes = st.number_input("Enter your average active minutes per day:", min_value=0, step=5)
 time_in_bed = st.number_input("Enter your average time spent in bed daily (in hours):", min_value=0.0, step=0.5)
@@ -27,28 +41,91 @@ gym_days = st.number_input("How many days a week do you go to the gym?", min_val
 gym_hours = st.number_input("How many hours do you spend at the gym weekly?", min_value=0.0, step=0.5)
 
 if st.button("Submit Health Data"):
-    # Display user input summary
-    st.write("### Your Health Data Summary")
-    st.write(f"- Daily steps: {steps} steps")
-    st.write(f"- Active minutes: {active_minutes} minutes")
-    st.write(f"- Time in bed: {time_in_bed} hours")
-    st.write(f"- Average daily screen time: {total_screen_time} hours")
-    st.write(f"- Most used app: {most_used_app} ({most_used_app_time} hours)")
-    st.write(f"- Other apps usage: {other_apps}")
+    # Save data
+    new_data = pd.DataFrame({
+        'date': [date],
+        'steps': [steps],
+        'active_minutes': [active_minutes],
+        'time_in_bed': [time_in_bed],
+        'screen_time': [total_screen_time],
+        'most_used_app': [most_used_app],
+        'most_used_app_time': [most_used_app_time],
+        'other_apps': [other_apps],
+        'walk_days': [walk_days],
+        'walk_hours': [walk_hours],
+        'run_days': [run_days],
+        'run_hours': [run_hours],
+        'gym_days': [gym_days],
+        'gym_hours': [gym_hours],
+        'age': [age],
+        'height': [height],
+        'weight': [weight],
+        'affiliation': [affiliation]
+    })
+    st.session_state['health_data'] = pd.concat([st.session_state['health_data'], new_data], ignore_index=True)
+    st.success("Health data submitted successfully!")
+
+# Display historical data and statistics
+st.write("### Your Health Data Summary")
+view_option = st.selectbox("View your data by:", ["Day", "Week", "Month", "Year"])
+
+if not st.session_state['health_data'].empty:
+    health_data = st.session_state['health_data']
+    health_data['date'] = pd.to_datetime(health_data['date'])
+
+    if view_option == "Day":
+        st.write(health_data)
+    elif view_option == "Week":
+        weekly_data = health_data.resample('W-Mon', on='date').mean().reset_index().sort_values(by='date', ascending=False)
+        st.write(weekly_data)
+    elif view_option == "Month":
+        monthly_data = health_data.resample('M', on='date').mean().reset_index().sort_values(by='date', ascending=False)
+        st.write(monthly_data)
+    elif view_option == "Year":
+        yearly_data = health_data.resample('Y', on='date').mean().reset_index().sort_values(by='date', ascending=False)
+        st.write(yearly_data)
+
+    # Visual Representation of Data
+    st.write("### Visual Representation of Your Health Data")
+    fig, ax = plt.subplots()
+    if view_option == "Day":
+        ax.plot(health_data['date'], health_data['steps'], label='Steps')
+        ax.plot(health_data['date'], health_data['active_minutes'], label='Active Minutes')
+        ax.plot(health_data['date'], health_data['screen_time'], label='Screen Time')
+    elif view_option == "Week":
+        ax.plot(weekly_data['date'], weekly_data['steps'], label='Steps')
+        ax.plot(weekly_data['date'], weekly_data['active_minutes'], label='Active Minutes')
+        ax.plot(weekly_data['date'], weekly_data['screen_time'], label='Screen Time')
+    elif view_option == "Month":
+        ax.plot(monthly_data['date'], monthly_data['steps'], label='Steps')
+        ax.plot(monthly_data['date'], monthly_data['active_minutes'], label='Active Minutes')
+        ax.plot(monthly_data['date'], monthly_data['screen_time'], label='Screen Time')
+    elif view_option == "Year":
+        ax.plot(yearly_data['date'], yearly_data['steps'], label='Steps')
+        ax.plot(yearly_data['date'], yearly_data['active_minutes'], label='Active Minutes')
+        ax.plot(yearly_data['date'], yearly_data['screen_time'], label='Screen Time')
+    
+    ax.set_xlabel('Date')
+    ax.set_ylabel('Values')
+    ax.set_title('Health Metrics Over Time')
+    ax.legend()
+    st.pyplot(fig)
 
     # Analysis and Recommendations
     st.write("### Recommendations Based on Health and Activity Data")
-    if total_screen_time > 4:
-        st.warning(f"Your average daily screen time is {total_screen_time:.2f} hours, which is quite high. Here are some recommendations to reduce screen time:")
+    avg_screen_time = health_data['screen_time'].mean()
+    if avg_screen_time > 4:
+        st.warning(f"Your average daily screen time is {avg_screen_time:.2f} hours, which is quite high. Here are some recommendations to reduce screen time:")
         st.write("- Join an activity or club to reduce your time on the phone. Check out Bentley's CampusGroup app for activities that might interest you!")
         st.write("- Go for a walk around campus. Bentley's gym facilities and outdoor spaces are great options to help you be active!")
         st.write("- Consider attending a wellness event - there are workshops on stress management and yoga hosted by student services.")
     else:
-        st.success(f"Great job! Your average daily screen time is {total_screen_time:.2f} hours, which is in a healthy range!")
+        st.success(f"Great job! Your average daily screen time is {avg_screen_time:.2f} hours, which is in a healthy range!")
         st.write("- Check out upcoming fitness classes on Bentley CampusGroup to stay active and meet new people!")
         st.write("- Try adding some mindfulness practices to your routine, like a meditation session at the gym.")
 
-    if walk_days + run_days + gym_days < 3:
+    avg_activity_days = (health_data['walk_days'] + health_data['run_days'] + health_data['gym_days']).mean()
+    if avg_activity_days < 3:
         st.warning("Your weekly physical activity could be increased for better health. Consider adding more walks, runs, or gym sessions to your week.")
         st.write("- Bentley's Fitness Center offers group classes that could make exercise more engaging.")
         st.write("- Join a recreational sports team through CampusGroup to stay active and have fun!")
@@ -58,5 +135,3 @@ if st.button("Submit Health Data"):
 
 st.write("---")
 st.write("We care about your well-being! Please use this application to track your lifestyle and be mindful of your health. Stay connected, stay healthy!")
-
-
