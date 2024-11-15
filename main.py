@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import matplotlib.pyplot as plt
+import altair as alt
 
 # Set up Streamlit app
 st.title("Bentley University Healthy Lifestyle Recommendations")
@@ -87,29 +87,23 @@ if not st.session_state['health_data'].empty:
 
     # Visual Representation of Data
     st.write("### Visual Representation of Your Health Data")
-    fig, ax = plt.subplots()
     if view_option == "Day":
-        ax.plot(health_data['date'], health_data['steps'], label='Steps')
-        ax.plot(health_data['date'], health_data['active_minutes'], label='Active Minutes')
-        ax.plot(health_data['date'], health_data['screen_time'], label='Screen Time')
+        chart_data = health_data
     elif view_option == "Week":
-        ax.plot(weekly_data['date'], weekly_data['steps'], label='Steps')
-        ax.plot(weekly_data['date'], weekly_data['active_minutes'], label='Active Minutes')
-        ax.plot(weekly_data['date'], weekly_data['screen_time'], label='Screen Time')
+        chart_data = weekly_data
     elif view_option == "Month":
-        ax.plot(monthly_data['date'], monthly_data['steps'], label='Steps')
-        ax.plot(monthly_data['date'], monthly_data['active_minutes'], label='Active Minutes')
-        ax.plot(monthly_data['date'], monthly_data['screen_time'], label='Screen Time')
+        chart_data = monthly_data
     elif view_option == "Year":
-        ax.plot(yearly_data['date'], yearly_data['steps'], label='Steps')
-        ax.plot(yearly_data['date'], yearly_data['active_minutes'], label='Active Minutes')
-        ax.plot(yearly_data['date'], yearly_data['screen_time'], label='Screen Time')
-    
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Values')
-    ax.set_title('Health Metrics Over Time')
-    ax.legend()
-    st.pyplot(fig)
+        chart_data = yearly_data
+
+    base = alt.Chart(chart_data).encode(x='date:T')
+    steps_chart = base.mark_line(color='blue').encode(y='steps:Q').properties(title='Steps Over Time')
+    active_minutes_chart = base.mark_line(color='green').encode(y='active_minutes:Q').properties(title='Active Minutes Over Time')
+    screen_time_chart = base.mark_line(color='red').encode(y='screen_time:Q').properties(title='Screen Time Over Time')
+
+    st.altair_chart(steps_chart, use_container_width=True)
+    st.altair_chart(active_minutes_chart, use_container_width=True)
+    st.altair_chart(screen_time_chart, use_container_width=True)
 
     # Analysis and Recommendations
     st.write("### Recommendations Based on Health and Activity Data")
