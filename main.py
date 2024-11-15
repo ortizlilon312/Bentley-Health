@@ -72,16 +72,19 @@ if not st.session_state['health_data'].empty:
     health_data = st.session_state['health_data']
     health_data['date'] = pd.to_datetime(health_data['date'])
 
+    numeric_columns = health_data.select_dtypes(include='number').columns
+    health_data[numeric_columns] = health_data[numeric_columns].apply(pd.to_numeric, errors='coerce')
+
     if view_option == "Day":
         st.write(health_data)
     elif view_option == "Week":
-        weekly_data = health_data.resample('W-Mon', on='date').mean().reset_index().sort_values(by='date', ascending=False)
+        weekly_data = health_data.set_index('date').resample('W-Mon').mean().reset_index().sort_values(by='date', ascending=False)
         st.write(weekly_data)
     elif view_option == "Month":
-        monthly_data = health_data.resample('M', on='date').mean().reset_index().sort_values(by='date', ascending=False)
+        monthly_data = health_data.set_index('date').resample('M').mean().reset_index().sort_values(by='date', ascending=False)
         st.write(monthly_data)
     elif view_option == "Year":
-        yearly_data = health_data.resample('Y', on='date').mean().reset_index().sort_values(by='date', ascending=False)
+        yearly_data = health_data.set_index('date').resample('Y').mean().reset_index().sort_values(by='date', ascending=False)
         st.write(yearly_data)
 
     # Visual Representation of Data
