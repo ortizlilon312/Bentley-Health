@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import altair as alt
 
 # Set up Streamlit app
 st.title("Bentley University Healthy Lifestyle Recommendations")
@@ -88,22 +87,15 @@ if not st.session_state['health_data'].empty:
     # Visual Representation of Data
     st.write("### Visual Representation of Your Health Data")
     if view_option == "Day":
-        chart_data = health_data
+        chart_data = health_data.set_index('date')
     elif view_option == "Week":
-        chart_data = weekly_data
+        chart_data = weekly_data.set_index('date')
     elif view_option == "Month":
-        chart_data = monthly_data
+        chart_data = monthly_data.set_index('date')
     elif view_option == "Year":
-        chart_data = yearly_data
+        chart_data = yearly_data.set_index('date')
 
-    base = alt.Chart(chart_data).encode(x='date:T')
-    steps_chart = base.mark_line(color='blue').encode(y='steps:Q').properties(title='Steps Over Time')
-    active_minutes_chart = base.mark_line(color='green').encode(y='active_minutes:Q').properties(title='Active Minutes Over Time')
-    screen_time_chart = base.mark_line(color='red').encode(y='screen_time:Q').properties(title='Screen Time Over Time')
-
-    st.altair_chart(steps_chart, use_container_width=True)
-    st.altair_chart(active_minutes_chart, use_container_width=True)
-    st.altair_chart(screen_time_chart, use_container_width=True)
+    st.line_chart(chart_data[['steps', 'active_minutes', 'screen_time']])
 
     # Analysis and Recommendations
     st.write("### Recommendations Based on Health and Activity Data")
